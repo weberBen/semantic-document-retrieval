@@ -23,6 +23,8 @@ options:
                         the query
   --model_name MODEL_NAME
                         Name of the model to use for embedding generation
+  --data_dir DATA_DIR   Path of the PDF/data dir
+  --log_file LOG_FILE   Filename for the log file
 ```
 
 ## Output example
