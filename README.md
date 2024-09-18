@@ -1,18 +1,33 @@
-# Simple semantic document search from PDF directory
+# Simple semantic document search from file directory
 
-This is a simple semantic search application to index all pdf inside a specified directory. This app does not generate answer based on the retrieved document, it's only intend to retrieve documents chunks to then be used in ChatGPT or Claude for answer generation.
+This is a simple semantic search application to index all file inside a specified directory. This app does not generate answer based on the retrieved document, it's only intend to retrieve documents chunks to then be used in ChatGPT or Claude for answer generation.
 If you need answer generation, you can use [Verba](https://github.com/weaviate/Verba).
 
 The application has been built as a quick & dirty project with `HuggingFace` model, `langchain` and `chromadb`.
 
+Supported file are : 
+- `pdf`
+- `markdown (md)`
+- `html`
+- `Libre office (odf)`
+- `text (txt)`
+- `Microsoft word (docx/dox)`
+- `Microsoft powerpoint (pptx/ppt)`
+
 # Usage
 
 ```bash
-> python3 main.py --help
+poetry run python main.py
+```
+
+See help for more commands :
+
+```bash
+> main.py --help
 usage: main.py [-h] [--user_prompt USER_PROMPT] [--doc_limit DOC_LIMIT]
                [--model_name MODEL_NAME]
 
-Document Query System using Sentence Transformers and Vector Stores
+Semantic search : query file database using sentence transformers and vector stores
 
 options:
   -h, --help            show this help message and exit
@@ -23,8 +38,13 @@ options:
                         the query
   --model_name MODEL_NAME
                         Name of the model to use for embedding generation
-  --data_dir DATA_DIR   Path of the PDF/data dir
+  --data_dir DATA_DIR   Path of the file dir
   --log_file LOG_FILE   Filename for the log file
+  --doc_types DOC_TYPES
+                        Extension of document, separated by / (e.g.
+                        pdf/md/txt). Supported :
+                        pdf/md/html/txt/odt/docx/doc/pptx/ppt
+
 ```
 
 ## Output example
