@@ -192,10 +192,24 @@ def main():
         default="sentence-transformers/all-mpnet-base-v2", 
         help="Name of the model to use for embedding generation"
     )
+
+    parser.add_argument(
+        '--data_dir', 
+        type=str, 
+        default="./data", 
+        help="Path of the PDF/data dir"
+    )
+
+    parser.add_argument(
+        '--log_file', 
+        type=str, 
+        default="prompt.log", 
+        help="Filename for the log file"
+    )
     
     args = parser.parse_args()
 
-    logger = initialize_logger(log_file="prompt.log")
+    logger = initialize_logger(log_file=args.log_file)
 
     # Use the parsed model_name argument
     embeddings = initialize_embeddings(args.model_name) 
@@ -204,8 +218,7 @@ def main():
     vector_store = initialize_vector_store(embeddings)
 
     # Load documents from PDFs folder and add them to vector store if needed
-    pdf_folder = './data'  # Replace with your PDFs directory
-    load_and_process_pdfs(pdf_folder, vector_store, logger)
+    load_and_process_pdfs(args.data_dir, vector_store, logger)
     
     # Start query console using the parsed user_prompt and doc_limit
     query_documents(vector_store, logger, user_prompt=args.user_prompt, doc_limit=args.doc_limit)
