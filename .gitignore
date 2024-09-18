@@ -1,0 +1,3 @@
+data/
+*.log
+chroma_langchain_db/
