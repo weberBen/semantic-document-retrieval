@@ -20,6 +20,8 @@ Supported file are :
 poetry run python main.py --data_dir "./data" --doc_types "pdf/txt"
 ```
 
+This will create a `chroma_langchain_db` folder for persitent database and a `prompt.log` (you can change the name) file that log all interactions.
+
 See help for more commands :
 
 ```bash
