@@ -3,7 +3,7 @@
 This is a simple RAG application to index all pdf inside a specified directory. This app does not generate answer based on the retrieved document, it's only intend to retrieve documents chunks to then be used in ChatGPT or Claude for answer generation.
 If you need answer generation, you can use [Verba](https://github.com/weaviate/Verba).
 
-The application has been built as a quick & dirty project with `HuggingFace` model.
+The application has been built as a quick & dirty project with `HuggingFace` model, `langchain` and `chromadb`.
 
 # Usage
 
@@ -61,6 +61,7 @@ Result of the search is automatically copied to clipboard.
 
 If a database exists then no more file will be indexed. Tha app is made to index once a whole directory.
 
+You can tweak parameters passed to the embeddings model inside function `initialize_embeddings` which simply use `HuggingFaceEmbeddings` from `langchain`.
 
 
 # Installation
