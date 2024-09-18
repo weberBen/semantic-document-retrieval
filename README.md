@@ -17,7 +17,7 @@ Supported file are :
 # Usage
 
 ```bash
-poetry run python main.py --data_dir "./data"
+poetry run python main.py --data_dir "./data" --doc_types "pdf/txt"
 ```
 
 See help for more commands :
