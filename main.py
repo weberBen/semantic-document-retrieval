@@ -65,7 +65,8 @@ def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_t
     documents = []
 
     logger.info(f"Total discovered PDF : {total}")
-
+    
+    error_count = 0
     for idx, file in enumerate(files):
         try:
             logger.info(f"Parsing document : {file} (idx: {idx + 1}/{total})")
@@ -145,7 +146,8 @@ def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_t
             documents.extend(texts)
         except Exception as e:
             logger.error(f"Error parsing {file}: {str(e)}")
-            raise e
+            error_count += 1
+            continue
         
         # Add documents in batches
         if idx % batch_size == 0 and idx > 0 :
@@ -166,6 +168,9 @@ def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_t
         vector_store.add_documents(documents=documents, ids=uuids)
     
     logger.info(f"Document added : 100% ({total}/{total})")
+
+    if error_count > 0:
+        logger.info(f"{error_count} errors detected during file parsing")
 
 # Interactive query console
 def query_documents(vector_store, logger, user_prompt="Query", doc_limit=5):
