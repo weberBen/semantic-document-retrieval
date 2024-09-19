@@ -106,3 +106,5 @@ To install the dependencies, run the following command:
 ```bash
 poetry install
 ```
+
+**Note**: At the time of writing, there is a known [bug](https://github.com/chroma-core/chroma/issues/2513) with `Chromadb` on Windows. The workaround is to create a Python virtual environment (`venv`) using `Python 3.10`.
