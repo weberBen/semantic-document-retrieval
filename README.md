@@ -1,28 +1,40 @@
-# Simple semantic document search from file directory
+# Simple Semantic Document Search from File Directory
 
-This is a simple semantic search application to index all file inside a specified directory. This app does not generate answer based on the retrieved document, it's only intend to retrieve documents chunks to then be used in ChatGPT or Claude for answer generation.
-If you need answer generation (RAG), you can use [Verba](https://github.com/weaviate/Verba).
+This is a simple semantic search application designed to index files in a specified directory. The purpose of this app is to retrieve document chunks, which can then be used in other tools like ChatGPT or Claude for answer generation.
 
-The application has been built as a quick & dirty project with `HuggingFace` model, `langchain` and `chromadb`.
+**Note**: This app does not generate answers based on the retrieved documents. If you need a solution that performs Retrieval-Augmented Generation (RAG), consider using [Verba](https://github.com/weaviate/Verba).
 
-Supported file are : 
-- `pdf`
-- `markdown (md)`
-- `html`
-- `Libre office (odf)`
-- `text (txt)`
-- `Microsoft word (docx/dox)`
-- `Microsoft powerpoint (pptx/ppt)`
+The application leverages `HuggingFace` models, `langchain`, and `chromadb` to provide efficient and scalable semantic search. 
 
-# Usage
+## Supported File Types
+The app supports the following file formats:
+- **PDF**
+- **Markdown (`.md`)**
+- **HTML**
+- **LibreOffice (`.odf`)**
+- **Text (`.txt`)**
+- **Microsoft Word (`.docx/.doc`)**
+- **Microsoft PowerPoint (`.pptx/.ppt`)**
+
+## Usage
+
+Run the application using the following command:
 
 ```bash
 poetry run python main.py --data_dir "./data" --doc_types "pdf/txt"
 ```
 
-This will create a `chroma_langchain_db` folder for persitent database and a `prompt.log` (you can change the name) file that log all interactions.
+This command will:
+1. Create a `chroma_langchain_db` folder for the persistent database.
+2. Log interactions in a file (default: `prompt.log`, but you can change the filename).
 
-See help for more commands :
+To view additional options, use the help command:
+
+```bash
+python main.py --help
+```
+
+### Example Command Options:
 
 ```bash
 > main.py --help
@@ -49,7 +61,10 @@ options:
 
 ```
 
-## Output example
+The default embedding model is `sentence-transformers/all-mpnet-base-v2`.
+You can check model performance depending on your use case on the [Hugging Face MTEB leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+
+### Output Example
 
 ```bash
 ----------
@@ -77,16 +92,16 @@ learning to learn good representations from unlabeled data.
 From documents provided as context, answer to the following query: self supervised
 ```
 
-Default model is `sentence-transformers/all-mpnet-base-v2`.
 
-Result of the search is automatically copied to clipboard.
+### Behavior:
 
-If a database exists then no more file will be indexed. Tha app is made to index once a whole directory.
+- Results of the search are automatically copied to your clipboard.
+- If a database already exists, no further indexing will take place (i.e., the app indexes the directory once).
+- You can adjust embedding model parameters in the `initialize_embeddings` function, which uses `HuggingFaceEmbeddings` from the `langchain` library.
 
-You can tweak parameters passed to the embeddings model inside function `initialize_embeddings` which simply use `HuggingFaceEmbeddings` from `langchain`.
+## Installation
 
-
-# Installation
+To install the dependencies, run the following command:
 
 ```bash
 poetry install
