@@ -18,6 +18,7 @@ import time
 import PyPDF2
 
 SUPPORTED_DOC_TYPES = ["pdf", "md", "html", "txt", "odt", "docx", "doc", "pptx", "ppt"]
+COLLECTION_NAME = "articles"
 
 # Initialize embedding and vector store
 def initialize_embeddings(model_name):
@@ -38,13 +39,56 @@ def build_query(query):
 
 def initialize_vector_store(embeddings, db_path="./chroma_langchain_db"):
     return Chroma(
-        collection_name="articles",
+        collection_name=COLLECTION_NAME,
         embedding_function=embeddings,
         persist_directory=db_path,  # Persistent storage for local data
     )
 
-# Load and process documents from PDFs
-def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_types="pdf"):
+def get_document_id(document_chunks):
+    obj_type = "list" if (type(document_chunks) is list) else "singleton"
+    
+    if obj_type == "singleton":
+        document_chunks = [document_chunks]
+    
+    uuids = [str(uuid4()) for _ in range(len(document_chunks))]
+
+    if obj_type == "singleton":
+        return uuids[0]
+    
+    return uuids
+
+def find_document(vector_store, ids, find_by="id", limit=None, include=None):
+    if include is None:
+        include = ["metadatas", "documents"]
+    
+    if type(ids) is not list and ids is not None:
+        ids = [ids]
+
+    if find_by == "filename":
+        return vector_store.get(
+            where={"source": {"$in": ids}},
+            limit=limit,
+            include=include,
+        )
+    elif find_by == "id":
+        return vector_store.get(ids=ids, limit=limit, include=include)
+    else:
+        raise Exception(f"Invalid find by type '{find_by}'")
+
+def delete_document_by_filename(vector_store, filename, logger):
+    ids = find_document(vector_store, filename, find_by="filename", limit=None, include=[])["ids"]
+    if len(ids) == 0:
+        logger.info(f"No document found for '{filename}'")
+        return
+    
+    vector_store.delete(ids=ids)
+
+    logger.info(f"{len(ids)} chunks deleted for document '{filename}'")
+    
+def is_empty_result(results):
+    return len(results['ids']) == 0
+
+def get_files(vector_store, data_folder, doc_types, batch_size=300):
     doc_types = doc_types.split("/")
 
     # Check if any document type is not in the supported list
@@ -52,21 +96,52 @@ def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_t
         if doc_type not in SUPPORTED_DOC_TYPES:
             raise ValueError(f"Unsupported document type: '{doc_type}'")
     
-    collection = vector_store.get(limit=2)
+    
+    # Find all files with the correct extensions in the folder
+    all_files = sorted([os.path.join(root, f) 
+                        for root, dirs, files in os.walk(data_folder) 
+                        for f in files if f.endswith(tuple([f".{ext}" for ext in doc_types]))])
 
-    # If the collection is empty, create a new one
-    if len(collection['ids']) > 0:
-        return
+    ignored_document_count = 0  # Count of documents ignored because they already exist
+    processed_files = []  # List of files that need to be processed
 
-    files = sorted([os.path.join(root, f) 
-                for root, dirs, files in os.walk(pdf_folder) 
-                for f in files if f.endswith(tuple([f".{ext}" for ext in doc_types]))])
+    # Process files in batches
+    for i in range(0, len(all_files), batch_size):
+        batch_files = all_files[i:i + batch_size]
+        # filenames = [os.path.basename(f) for f in batch_files]  # Extract filenames
+
+        # Find documents that already exist in the database
+        result = find_document(vector_store, batch_files, find_by="filename", limit=None, include=["metadatas"])
+
+        # Check if the result has documents, meaning they already exist
+        if result:
+            existing_files = set([doc['source'] for doc in result['metadatas']])
+            batch_files = [f for f in batch_files if f not in existing_files]
+            ignored_document_count += len(existing_files)
+
+        # Append the files that need to be processed
+        processed_files.extend(batch_files)
+    
+    return processed_files, ignored_document_count
+
+
+def insert_in_database(vector_store, documents):
+    uuids = get_document_id(documents)
+    vector_store.add_documents(documents=documents, ids=uuids)
+    
+    return len(documents) # return inserted count
+
+
+# Load and process documents from folder
+def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_types="pdf"):
+    files, ignored_document_count = get_files(vector_store, data_folder, doc_types)
     total = len(files)
     documents = []
 
-    logger.info(f"Total discovered PDF : {total}")
-    
+    logger.info(f"Total discovered file : {total}")
     error_count = 0
+    ignored_chunk_count = 0
+
     for idx, file in enumerate(files):
         try:
             logger.info(f"Parsing document : {file} (idx: {idx + 1}/{total})")
@@ -145,32 +220,38 @@ def load_and_process_files(pdf_folder, vector_store, logger, batch_size=5, doc_t
             
             documents.extend(texts)
         except Exception as e:
-            logger.error(f"Error parsing {file}: {str(e)}")
             error_count += 1
-            continue
+            logger.error(f"Error parsing {file}: {str(e)}")
+            continue # do not raise error and keep going adding files to database
         
         # Add documents in batches
         if idx % batch_size == 0 and idx > 0 :
-          logger.info(f"Inserting {len(documents)} in database")
+            logger.info(f"Inserting documents in database")
 
-          uuids = [str(uuid4()) for _ in range(len(documents))]
-          vector_store.add_documents(documents=documents, ids=uuids)
-          documents = []
-
-          progression = round(float(idx) / float(total) * 100, 2)
-          logger.info(f"Document added : {progression}% ({idx}/{total})")
+            count_doc = len(documents)
+            count_inserted = insert_in_database(vector_store, documents)
+            count_ignored = count_doc - count_inserted
+            ignored_chunk_count += count_ignored
+            documents = []
+            
+            logger.info(f"{count_inserted} chunks inserted ({count_ignored} ignored / already in database)")
+            progression = round(float(idx) / float(total) * 100, 2)
+            logger.info(f"Progression : {progression}% ({idx}/{total})")
 
     # Add any remaining documents
     if documents:
-        logger.info(f"Inserting {len(documents)} in database")
+        logger.info(f"Inserting documents in database")
 
-        uuids = [str(uuid4()) for _ in range(len(documents))]
-        vector_store.add_documents(documents=documents, ids=uuids)
+        count_doc = len(documents)
+        count_inserted = insert_in_database(vector_store, documents)
+        count_ignored = count_doc - count_inserted
+        ignored_chunk_count += count_ignored
+        
+        logger.info(f"{count_inserted} chunks inserted ({count_ignored} ignored / already in database)")
+        
+    logger.info(f"Progression : 100% ({total}/{total})")
     
-    logger.info(f"Document added : 100% ({total}/{total})")
-
-    if error_count > 0:
-        logger.info(f"{error_count} errors detected during file parsing")
+    logger.info(f"Total error count : {error_count} | Total document ignored {ignored_document_count} | Total chunk ignored {ignored_chunk_count}")
 
 # Interactive query console
 def query_documents(vector_store, logger, user_prompt="Query", doc_limit=5):
@@ -292,22 +373,32 @@ def main():
         default="pdf", 
         help=f"Extension of document, separated by / (e.g. pdf/md/txt). Supported : {'/'.join(SUPPORTED_DOC_TYPES)}"
     )
+
+    parser.add_argument(
+        '--delete_doc', 
+        type=str, 
+        default=None, 
+        help=f"Delete document by filename"
+    )
     
     args = parser.parse_args()
 
     logger = initialize_logger(log_file=args.log_file)
-
     # Use the parsed model_name argument
     embeddings = initialize_embeddings(args.model_name) 
     
     # Initialize vector store with embeddings
     vector_store = initialize_vector_store(embeddings)
 
-    # Load documents from PDFs folder and add them to vector store if needed
-    load_and_process_files(args.data_dir, vector_store, logger, doc_types=args.doc_types)
-    
-    # Start query console using the parsed user_prompt and doc_limit
-    query_documents(vector_store, logger, user_prompt=args.user_prompt, doc_limit=args.doc_limit)
+
+    if args.delete_doc:
+        delete_document_by_filename(vector_store, args.delete_doc, logger)
+    else:
+        # Load documents from folder and add them to vector store if needed
+        load_and_process_files(args.data_dir, vector_store, logger, doc_types=args.doc_types)
+        
+        # Start query console using the parsed user_prompt and doc_limit
+        query_documents(vector_store, logger, user_prompt=args.user_prompt, doc_limit=args.doc_limit)
 
 
 if __name__ == '__main__':

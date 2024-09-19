@@ -58,7 +58,8 @@ options:
                         Extension of document, separated by / (e.g.
                         pdf/md/txt). Supported :
                         pdf/md/html/txt/odt/docx/doc/pptx/ppt
-
+  --delete_doc DELETE_DOC
+                        Delete document by filename
 ```
 
 The default embedding model is `sentence-transformers/all-mpnet-base-v2`.
@@ -96,7 +97,8 @@ From documents provided as context, answer to the following query: self supervis
 ### Behavior:
 
 - Results of the search are automatically copied to your clipboard.
-- If a database already exists, no further indexing will take place (i.e., the app indexes the directory once).
+- To add a new document, simply place it inside the data directory. Any document with the same file path will be ignored (even if the content is different). However, if the document has the same content but a different file path, it will still be added to the database. We do not perform content base duplicate detection.
+- You can delete a document by its file path with `--delete_doc`
 - You can adjust embedding model parameters in the `initialize_embeddings` function, which uses `HuggingFaceEmbeddings` from the `langchain` library.
 
 ## Installation
