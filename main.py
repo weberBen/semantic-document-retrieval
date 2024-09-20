@@ -133,7 +133,7 @@ def insert_in_database(vector_store, documents):
 
 
 # Load and process documents from folder
-def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_types="pdf"):
+def load_and_process_files(data_folder, vector_store, logger, batch_size=300, display_batch_size=5, doc_types="pdf"):
     files, ignored_document_count = get_files(vector_store, data_folder, doc_types)
     total = len(files)
     documents = []
@@ -224,8 +224,7 @@ def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_
             logger.error(f"Error parsing {file}: {str(e)}")
             continue # do not raise error and keep going adding files to database
         
-        # Add documents in batches
-        if idx % batch_size == 0 and idx > 0 :
+        if len(document) > batch_size:
             count_doc = len(documents)
             logger.info(f"Inserting {count_doc} documents in database")
 
@@ -235,11 +234,14 @@ def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_
             documents = []
             
             logger.info(f"{count_inserted} chunks inserted ({count_ignored} ignored / already in database)")
+        
+        # Add documents in batches
+        if idx % display_batch_size == 0 and idx > 0 :
             progression = round(float(idx) / float(total) * 100, 2)
             logger.info(f"Progression : {progression}% ({idx}/{total})")
 
     # Add any remaining documents
-    if documents:
+    if len(documents) > 0:
         count_doc = len(documents)
         logger.info(f"Inserting {count_doc} documents in database")
 
