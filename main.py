@@ -213,7 +213,7 @@ def load_and_process_files(data_folder, vector_store, logger, batch_size=300, di
 
             if text_splitter_type == "text":
                 # Split document into chunks
-                text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=400)
                 texts = text_splitter.split_documents(document)
             else:
                 raise Exception(f"Invalid text splitter type '{text_splitter_type}'")
