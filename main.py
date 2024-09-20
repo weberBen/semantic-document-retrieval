@@ -226,9 +226,9 @@ def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_
         
         # Add documents in batches
         if idx % batch_size == 0 and idx > 0 :
-            logger.info(f"Inserting documents in database")
-
             count_doc = len(documents)
+            logger.info(f"Inserting {count_doc} documents in database")
+
             count_inserted = insert_in_database(vector_store, documents)
             count_ignored = count_doc - count_inserted
             ignored_chunk_count += count_ignored
@@ -240,7 +240,8 @@ def load_and_process_files(data_folder, vector_store, logger, batch_size=5, doc_
 
     # Add any remaining documents
     if documents:
-        logger.info(f"Inserting documents in database")
+        count_doc = len(documents)
+        logger.info(f"Inserting {count_doc} documents in database")
 
         count_doc = len(documents)
         count_inserted = insert_in_database(vector_store, documents)
