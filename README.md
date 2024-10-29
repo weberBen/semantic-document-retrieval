@@ -2,7 +2,21 @@
 
 This is a simple semantic search application designed to index files in a specified directory. The purpose of this app is to retrieve document chunks, which can then be used in other tools like ChatGPT or Claude for answer generation.
 
-**Note**: This app does not generate answers based on the retrieved documents. If you need a solution that performs Retrieval-Augmented Generation (RAG), consider using [Verba](https://github.com/weaviate/Verba).
+## Note
+
+This app does not generate answers based on the retrieved documents. If you need a solution that performs Retrieval-Augmented Generation (RAG), consider using [Verba](https://github.com/weaviate/Verba).
+
+Semantic search is challenging to implement effectively, as it relies on numerous factors, including:
+
+- Text splitting: Determining where to split text is crucial for optimal results. Various tools can assist in this, such as the [LangChain Document Transformers](https://python.langchain.com/docs/how_to/#text-splitters), the [NLTK Text Splitter](https://python.langchain.com/api_reference/text_splitters/nltk/langchain_text_splitters.nltk.NLTKTextSplitter.html), and the [SpaCy Text Splitter](https://python.langchain.com/api_reference/text_splitters/spacy/langchain_text_splitters.spacy.SpacyTextSplitter.html).
+- Query type: Whether the query is phrased as a question or a set of keywords influences which models are best suited for processing.
+- (Re)Ranking models: Using the appropriate model for re-ranking retrieved chunks is vital for improving the accuracy of results (see this [guide to re-ranking techniques](https://medium.com/@srikanthdongalajsr/understanding-reranking-techniques-advantages-and-disadvantages-eb0b157f0b6b)).
+- Separate models for query and document processing: Utilizing distinct models for query understanding and document analysis can enhance performance.
+- Local vs Cloud models: The choice between using local versus cloud-hosted models impacts latency, scalability, accuracy, and cost.
+- Combining search approaches: Merging semantic search with traditional full-text search can yield more comprehensive results.
+
+For many, the straightforward solution is to use proprietary software that provides an all-in-one approach, such as [NotebookLM](https://notebooklm.google/), [Slite](https://slite.com/), [Notion](https://www.notion.so/product/ai), and [Confluence](https://www.atlassian.com/software/confluence/resources/guides/best-practices/atlassian-ai).
+
 
 The application leverages `HuggingFace` models, `langchain`, and `chromadb` to provide efficient and scalable semantic search. 
 
